@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TırRota — indir</title>
+<style>
+  :root{--mavi:#1a73e8;--yazi:#202124;--gri:#5f6368;--zemin:#f8f9fa}
+  @media (prefers-color-scheme: dark){:root{--yazi:#e8eaed;--gri:#9aa0a6;--zemin:#202124;--mavi:#8ab4f8}}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--zemin);color:var(--yazi)}
+  main{max-width:520px;margin:0 auto;padding:32px 16px 48px}
+  h1{font-size:28px;margin:0 0 4px}
+  .alt{color:var(--gri);margin:0 0 24px}
+  a.indir{display:block;text-align:center;background:var(--mavi);color:#fff;text-decoration:none;font-weight:600;
+    font-size:18px;padding:16px;border-radius:28px}
+  @media (prefers-color-scheme: dark){a.indir{color:#202124}}
+  .surum{color:var(--gri);text-align:center;margin:10px 0 28px;font-size:14px}
+  h2{font-size:18px;margin:28px 0 8px}
+  ol{padding-left:22px;line-height:1.6}
+  ul.not{padding-left:20px;line-height:1.5}
+  .kucuk{font-size:13px;color:var(--gri)}
+</style>
+</head>
+<body>
+<main>
+  <h1>TırRota</h1>
+  <p class="alt">TIR ve kamyon şoförleri için navigasyon</p>
+  <a class="indir" id="indir" href="#">Android için indir</a>
+  <p class="surum" id="surum">Sürüm bilgisi alınıyor…</p>
+
+  <h2>Nasıl kurulur</h2>
+  <ol>
+    <li>Yukarıdaki düğmeye dokunun; dosya iner.</li>
+    <li>İndirme bitince bildirimdeki <b>Aç</b>'a dokunun.</li>
+    <li>Telefon "bilinmeyen uygulamalar" izni isterse <b>Ayarlar</b>'a girip
+        bu kaynağa izin verin, sonra geri dönüp <b>Yükle</b>'ye basın.</li>
+    <li>Uygulamayı açın, Google hesabınızla giriş yapın.</li>
+  </ol>
+  <p class="kucuk">Sonraki güncellemeler uygulamanın içinden "Güncelle" düğmesiyle gelir;
+     bu sayfaya tekrar gelmeniz gerekmez.</p>
+
+  <h2>Bu sürümde</h2>
+  <ul class="not" id="notlar"></ul>
+</main>
+<script>
+  fetch('surum.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).then(j => {
+    document.getElementById('indir').href = j.apk;
+    document.getElementById('surum').textContent = 'Sürüm ' + j.ad + ' · ' + j.tarih + ' · ' + j.boyut;
+    const ul = document.getElementById('notlar');
+    (j.notlar || []).forEach(n => { const li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+  }).catch(() => { document.getElementById('surum').textContent = 'Sürüm bilgisi alınamadı.'; });
+</script>
+</body>
+</html>
