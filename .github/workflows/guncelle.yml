@@ -1,0 +1,102 @@
+# TırRota — işletme karolarını Overture'dan üret ve yayınla
+#
+# Overture her ay yeni sürüm çıkarıyor; bu iş ayda bir en son sürümü
+# çekip Türkiye'nin z14 karolarını yeniden üretir. Elle de çalıştırılabilir
+# (Actions → "İşletme karoları" → Run workflow).
+#
+# Geçmiş TEK kayıtta tutuluyor: her ay ~160 MB karo değişiyor, hepsini
+# geçmişte biriktirmek depoyu birkaç ayda GitHub sınırına dayardı.
+
+name: İşletme karoları
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 27 * *'          # her ayın 27'si 03:00 UTC
+  push:
+    branches: [main]
+    paths: ['arac/**', '.github/workflows/**']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: karolar
+  cancel-in-progress: false
+
+jobs:
+  uret:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Araçları kur
+        run: |
+          pip install --quiet duckdb
+          mkdir -p /tmp/node && cd /tmp/node
+          npm init -y > /dev/null
+          npm install --silent geojson-vt@3.2.1 vt-pbf@3.1.3
+
+      - name: En son Overture sürümü
+        id: surum
+        run: |
+          S=$(curl -sf https://stac.overturemaps.org/catalog.json | jq -r .latest)
+          echo "Overture sürümü: $S"
+          echo "surum=$S" >> "$GITHUB_OUTPUT"
+
+      - name: Türkiye işletmelerini çek
+        run: python -u arac/cek.py "${{ steps.surum.outputs.surum }}" 25.6 35.8 44.9 42.2 /tmp/turkiye.ndjson 2>&1 | tr '\r' '\n' | grep -v 'remaining\|elapsed'
+
+      - name: Karoları üret
+        run: |
+          rm -rf 14
+          NODE_PATH=/tmp/node/node_modules node --max-old-space-size=8192 arac/karo.js /tmp/turkiye.ndjson .
+          echo "${{ steps.surum.outputs.surum }}" > surum.txt
+          du -sh 14
+          find 14 -name '*.pbf' | wc -l
+
+      - name: Arama dizinini üret
+        run: |
+          rm -rf ara
+          node arac/dizin.js /tmp/turkiye.ndjson . "${{ steps.surum.outputs.surum }}+${{ github.run_number }}"   # dizin biçimi değişince telefonlar önbelleği tazelesin
+          du -sh ara
+
+      # TIR hız limitleri (OSM maxspeed:hgv) — uygulama eskiden Overpass'e
+      # soruyordu, Overpass sık çöküyor. Hata verirse işletme karoları
+      # yine yayınlansın; uygulama veri yoksa yönetmelik tablosuna düşer.
+      - name: TIR hız limitleri ve hız kameraları (OSM)
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq osmium-tool > /dev/null
+          curl -sfL -o /tmp/tr.osm.pbf https://download.geofabrik.de/europe/turkey-latest.osm.pbf
+          ls -lh /tmp/tr.osm.pbf
+          osmium tags-filter /tmp/tr.osm.pbf w/maxspeed:hgv -o /tmp/hgv.osm.pbf --overwrite
+          osmium export /tmp/hgv.osm.pbf -f geojsonseq --geometry-types=linestring -o /tmp/hgv.geojsonseq --overwrite
+          rm -rf hiz
+          node arac/hiz.js /tmp/hgv.geojsonseq .
+          du -sh hiz
+          # sabit hız kameraları — aynı özütten, ikinci indirme yok
+          osmium tags-filter /tmp/tr.osm.pbf n/highway=speed_camera -o /tmp/kam.osm.pbf --overwrite
+          osmium export /tmp/kam.osm.pbf -f geojsonseq --geometry-types=point -o /tmp/kam.geojsonseq --overwrite
+          rm -rf kamera
+          node arac/kamera.js /tmp/kam.geojsonseq .
+
+      - name: Yayınla
+        run: |
+          git config user.name "gknsays"
+          git config user.email "gknsezer@gmail.com"
+          git checkout --orphan yeni
+          git add -A
+          git commit -q -m "Overture ${{ steps.surum.outputs.surum }} — Türkiye işletme karoları + TIR hız limitleri"
+          git push -q -f origin yeni:main
