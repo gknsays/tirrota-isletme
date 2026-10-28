@@ -4,29 +4,50 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TırRota — indir</title>
+<meta name="description" content="TırRota: TIR ve kamyon şoförleri için navigasyon. Araç ölçüsüne göre rota, firma ve TIR girişi bilgisi.">
+<link rel="icon" href="https://gknsays.github.io/tirrota-isletme/indir/logo.png">
 <style>
-  :root{--mavi:#1a73e8;--yazi:#202124;--gri:#5f6368;--zemin:#f8f9fa}
-  @media (prefers-color-scheme: dark){:root{--yazi:#e8eaed;--gri:#9aa0a6;--zemin:#202124;--mavi:#8ab4f8}}
+  :root{--mavi:#1a73e8;--yazi:#202124;--gri:#5f6368;--zemin:#f8f9fa;--kart:#ffffff;--cizgi:#e3e5e8}
+  @media (prefers-color-scheme: dark){:root{--yazi:#e8eaed;--gri:#9aa0a6;--zemin:#202124;--kart:#2b2c2f;--cizgi:#3c4043;--mavi:#8ab4f8}}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--zemin);color:var(--yazi)}
   main{max-width:520px;margin:0 auto;padding:32px 16px 48px}
-  h1{font-size:28px;margin:0 0 4px}
-  .alt{color:var(--gri);margin:0 0 24px}
+  .bas{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+  .bas img{width:72px;height:72px;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+  h1{font-size:28px;margin:0 0 2px}
+  .alt{color:var(--gri);margin:0}
   a.indir{display:block;text-align:center;background:var(--mavi);color:#fff;text-decoration:none;font-weight:600;
     font-size:18px;padding:16px;border-radius:28px}
   @media (prefers-color-scheme: dark){a.indir{color:#202124}}
-  .surum{color:var(--gri);text-align:center;margin:10px 0 28px;font-size:14px}
+  .surum{color:var(--gri);text-align:center;margin:10px 0 24px;font-size:14px}
+  .ozellik{background:var(--kart);border:1px solid var(--cizgi);border-radius:16px;padding:6px 16px;margin:0 0 8px}
+  .ozellik li{padding:8px 0;border-bottom:1px solid var(--cizgi);list-style:none}
+  .ozellik li:last-child{border-bottom:0}
+  .ozellik{padding-left:16px}
   h2{font-size:18px;margin:28px 0 8px}
   ol{padding-left:22px;line-height:1.6}
   ul.not{padding-left:20px;line-height:1.5}
   .kucuk{font-size:13px;color:var(--gri)}
+  footer{margin-top:32px;font-size:12px;color:var(--gri);text-align:center}
 </style>
 </head>
 <body>
 <main>
-  <h1>TırRota</h1>
-  <p class="alt">TIR ve kamyon şoförleri için navigasyon</p>
-  <a class="indir" id="indir" href="#">Android için indir</a>
+  <div class="bas">
+    <img src="https://gknsays.github.io/tirrota-isletme/indir/logo.png" alt="">
+    <div>
+      <h1>TırRota</h1>
+      <p class="alt">TIR ve kamyon şoförleri için navigasyon</p>
+    </div>
+  </div>
+  <a class="indir" id="indir" href="https://gknsays.github.io/tirrota-isletme/indir/">Android için indir</a>
   <p class="surum" id="surum">Sürüm bilgisi alınıyor…</p>
+
+  <ul class="ozellik">
+    <li>🚛 Aracınızın yüksekliğine, tonajına ve ADR sınıfına göre rota</li>
+    <li>🏭 Firmalar ve TIR girişleri — şoförlerin eklediği güncel bilgiyle</li>
+    <li>📷 Radar, hız sınırı ve sesli yönlendirme</li>
+    <li>📻 Gruplarla bas-konuş telsiz</li>
+  </ul>
 
   <h2>Nasıl kurulur</h2>
   <ol>
@@ -34,6 +55,9 @@
     <li>İndirme bitince bildirimdeki <b>Aç</b>'a dokunun.</li>
     <li>Telefon "bilinmeyen uygulamalar" izni isterse <b>Ayarlar</b>'a girip
         bu kaynağa izin verin, sonra geri dönüp <b>Yükle</b>'ye basın.</li>
+    <li>Google Play Protect "taransın mı" diye sorarsa <b>Tara</b> ya da
+        <b>Yine de yükle</b> diyebilirsiniz; uygulama Play Store dışından
+        indirildiği için bu uyarı çıkar.</li>
     <li>Uygulamayı açın, Google hesabınızla giriş yapın.</li>
   </ol>
   <p class="kucuk">Sonraki güncellemeler uygulamanın içinden "Güncelle" düğmesiyle gelir;
@@ -41,14 +65,20 @@
 
   <h2>Bu sürümde</h2>
   <ul class="not" id="notlar"></ul>
+
+  <footer>TırRota</footer>
 </main>
 <script>
-  fetch('surum.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).then(j => {
-    document.getElementById('indir').href = j.apk;
-    document.getElementById('surum').textContent = 'Sürüm ' + j.ad + ' · ' + j.tarih + ' · ' + j.boyut;
-    const ul = document.getElementById('notlar');
-    (j.notlar || []).forEach(n => { const li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
-  }).catch(() => { document.getElementById('surum').textContent = 'Sürüm bilgisi alınamadı.'; });
+  /* Sayfa iki yerde yayında (tirrota.pages.dev ve GitHub Pages); sürüm
+     bilgisi her yerde tek kaynaktan okunur, yayında sayfayı yeniden
+     yüklemek gerekmez. */
+  fetch('https://gknsays.github.io/tirrota-isletme/indir/surum.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.json()).then(j => {
+      document.getElementById('indir').href = j.apk;
+      document.getElementById('surum').textContent = 'Sürüm ' + j.ad + ' · ' + j.tarih + ' · ' + j.boyut;
+      const ul = document.getElementById('notlar');
+      (j.notlar || []).forEach(n => { const li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+    }).catch(() => { document.getElementById('surum').textContent = 'Sürüm bilgisi alınamadı.'; });
 </script>
 </body>
 </html>
